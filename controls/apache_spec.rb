@@ -25,15 +25,15 @@ only_if do
 end
 
 if os[:family] =~ /(ubuntu|debian)/
-  hardening_config = File.join(apache.conf_dir, '/conf-enabled/hardening.conf')
+  hardening_config   = File.join(apache.conf_dir, '/conf-enabled/hardening.conf')
+  security_config    = File.join(apache.conf_dir, '/conf-enabled/security.conf')
+  module_path        = File.join(apache.conf_dir, '/mods-enabled/'
+  sites_enabled_path = File.join(apache.conf_dir, '/sites-enabled/')
 else
-  hardening_config = File.join(apache.conf_dir, '/conf.d/90.hardening.conf')
-end
-
-if os[:family] =~ /(ubuntu|debian)/
-  security_config = File.join(apache.conf_dir, '/conf-enabled/security.conf')
-else
-  security_config = File.join(apache.conf_dir, 'httpd.conf')
+  hardening_config   = File.join(apache.conf_dir, '/conf.d/90.hardening.conf')
+  security_config    = File.join(apache.conf_dir, '/conf/httpd.conf')
+  module_path        = File.join(apache.conf_dir, '/conf.modules.d/'
+  sites_enabled_path = File.join(apache.conf_dir, '/conf.d/')
 end
 
 title 'Apache server config'
@@ -133,7 +133,7 @@ control 'apache-07' do
   title 'Set the apache server token'
   desc '\'ServerTokens Prod\' tells Apache to return only Apache as product in the server response header on the every page request'
 
-  describe file(security_config) do
+  describe file(apache.conf_path) do
     its('content') { should match(/^ServerTokens Prod/) }
   end
 
@@ -148,7 +148,6 @@ control 'apache-08' do
   title 'Should not load certain modules'
   desc 'Apache HTTP should not load legacy modules'
 
-  module_path = File.join(apache.conf_dir, '/mods-enabled/')
   loaded_modules = command('ls ' << module_path).stdout.split.keep_if { |file_name| /.load/.match(file_name) }
 
   loaded_modules.each do |id|
@@ -178,7 +177,7 @@ control 'apache-09' do
   title 'Disable TRACE-methods'
   desc 'The web server doesn’t allow TRACE request and help in blocking Cross Site Tracing attack.'
 
-  describe file(File.join(apache.conf_dir, '/conf-enabled/security.conf')) do
+  describe file(security_config) do
     its('content') { should match(/^\s*?TraceEnable\s+?Off/) }
   end
 
@@ -193,7 +192,7 @@ control 'apache-10' do
   title 'Disable insecure HTTP-methods'
   desc 'Disable insecure HTTP-methods and allow only necessary methods.'
 
-  describe file(File.join(apache.conf_dir, '/conf-enabled/hardening.conf')) do
+  describe file(hardening_config) do
     its('content') { should match(/^\s*?<LimitExcept\s+?GET\s+?POST>/) }
   end
 
@@ -208,6 +207,8 @@ control 'apache-11' do
   title 'Disable Apache’s follows Symbolic Links for directories in alias.conf'
   desc 'Should include -FollowSymLinks or +SymLinksIfOwnerMatch for directories in alias.conf'
 
+  only_if { os[:family] =~ /(ubuntu|debian)/ }
+
   describe file(File.join(apache.conf_dir, '/mods-enabled/alias.conf')) do
     its('content') { should match(/-FollowSymLinks/).or match(/\+SymLinksIfOwnerMatch/) }
   end
@@ -217,6 +218,8 @@ control 'apache-12' do
   impact 1.0
   title 'Disable Directory Listing for directories in alias.conf'
   desc 'Should include -Indexes for directories in alias.conf'
+
+  only_if { os[:family] =~ /(ubuntu|debian)/ }
 
   describe file(File.join(apache.conf_dir, '/mods-enabled/alias.conf')) do
     its('content') { should match(/-Indexes/) }
@@ -249,7 +252,6 @@ control 'apache-14' do
   title 'Enable Apache Logging'
   desc 'Apache allows you to logging independently of your OS logging. It is wise to enable Apache logging, because it provides more information, such as the commands entered by users that have interacted with your Web server.'
 
-  sites_enabled_path = File.join(apache.conf_dir, '/sites-enabled/')
   loaded_sites = command('ls ' << sites_enabled_path).stdout.split.keep_if { |file_name| /.conf/.match(file_name) }
 
   loaded_sites.each do |id|
