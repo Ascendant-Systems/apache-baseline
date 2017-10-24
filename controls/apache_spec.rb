@@ -27,12 +27,12 @@ end
 if os[:family] =~ /(ubuntu|debian)/
   hardening_config   = File.join(apache.conf_dir, '/conf-enabled/hardening.conf')
   security_config    = File.join(apache.conf_dir, '/conf-enabled/security.conf')
-  module_path        = File.join(apache.conf_dir, '/mods-enabled/'
+  module_path        = File.join(apache.conf_dir, '/mods-enabled/')
   sites_enabled_path = File.join(apache.conf_dir, '/sites-enabled/')
 else
   hardening_config   = File.join(apache.conf_dir, '/conf.d/90.hardening.conf')
   security_config    = File.join(apache.conf_dir, '/conf/httpd.conf')
-  module_path        = File.join(apache.conf_dir, '/conf.modules.d/'
+  module_path        = File.join(apache.conf_dir, '/conf.modules.d/')
   sites_enabled_path = File.join(apache.conf_dir, '/conf.d/')
 end
 
