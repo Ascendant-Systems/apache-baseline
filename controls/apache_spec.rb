@@ -231,11 +231,12 @@ control 'apache-13' do
   title 'SSL honor cipher order'
   desc 'When choosing a cipher during an SSLv3 or TLSv1 handshake, normally the client\'s preference is used. If this directive is enabled, the server\'s preference will be used instead.'
 
+  only_if { command("test -f #{module_path}/ssl.conf") }
+
   describe file(File.join(apache.conf_dir, '/mods-enabled/ssl.conf')) do
     its('content') { should match(/^\s*?SSLHonorCipherOrder\s+?On/i) }
   end
 
-  sites_enabled_path = File.join(apache.conf_dir, '/sites-enabled/')
   loaded_sites = command('ls ' << sites_enabled_path).stdout.split.keep_if { |file_name| /.conf/.match(file_name) }
 
   loaded_sites.each do |id|
