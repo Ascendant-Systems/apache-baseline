@@ -24,6 +24,18 @@ only_if do
   command(apache.service).exist?
 end
 
+if os[:family] =~ /(ubuntu|debian)/
+  hardening_config = File.join(apache.conf_dir, '/conf-enabled/hardening.conf')
+else
+  hardening_config = File.join(apache.conf_dir, '/conf.d/90.hardening.conf')
+end
+
+if os[:family] =~ /(ubuntu|debian)/
+  security_config = File.join(apache.conf_dir, '/conf-enabled/security.conf')
+else
+  security_config = File.join(apache.conf_dir, 'httpd.conf')
+end
+
 title 'Apache server config'
 
 control 'apache-01' do
@@ -91,7 +103,7 @@ control 'apache-05' do
     it { should_not be_writable.by('others') }
     it { should_not be_executable.by('others') }
   end
-  describe file(File.join(apache.conf_dir, '/conf-enabled/hardening.conf')) do
+  describe file(hardening_config) do
     it { should be_owned_by 'root' }
     it { should be_grouped_into 'root' }
     it { should be_readable.by('owner') }
@@ -121,7 +133,7 @@ control 'apache-07' do
   title 'Set the apache server token'
   desc '\'ServerTokens Prod\' tells Apache to return only Apache as product in the server response header on the every page request'
 
-  describe file(File.join(apache.conf_dir, '/conf-enabled/security.conf')) do
+  describe file(security_config) do
     its('content') { should match(/^ServerTokens Prod/) }
   end
 
